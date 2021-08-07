@@ -7,14 +7,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "main.h"
 #include "Encoder.h"
+#include "PWM.h"
+#include "Timer.h"
+#include "Control.h"
 
-#if defined(__dsPIC33F__)
-	#include <p33Fxxxx.h>
-#endif
-/* Microcontroller MIPs (FCY) */
-#define F_CPU   7370000L
-#define FCY     F_CPU/2
+
+
+
 /*
  * 
  */
@@ -47,11 +48,6 @@ void PLLConfig(void){
 }
 
 
-uint16_t PLLisLock(void){
-    /*1 indicates PLL is Lock, PLL start-up timer is satisfied*/
-    /*0 indicates PLL is out of lock, startup is in progress or PLL inactive*/
-    return OSCCONbits.LOCK;
-}
 
 void vADCSetup(void){
     /* ADC */
@@ -81,25 +77,7 @@ void vUARTSetup(void){
     U1STA = 0x0400;
 }
 
-void vPWM1Setup( void ){
-    /*Main Configuration*/
-    
-    P1TCONbits.PTOPS  = 0;   // time base postscaler
-    P1TCONbits.PTCKPS = 0;   // time base prescale
-    P1TCONbits.PTMOD  = 2;   // Up-Down count mode (more resolution)
-    P1TMRbits.PTMR    = 0;   // PWM1 timer count value (start at 0)
-    P1TPERbits.PTPER  = 920; // PWM1 time base period
-    /*Mode Setup*/
-    PWM1CON1bits.PEN1H = 1; //enable PWM  H1 
-    PWM1CON1bits.PEN1L = 0; //disable PWM L1
-    /*pairs in independent mode*/
-    PWM1CON1bits.PMOD1 = 1; 
-    PWM1CON1bits.PMOD2 = 1;
-    PWM1CON1bits.PMOD3 = 1;
-    P1DC1 = 0;
-    P1TCONbits.PTEN   = 1;   // PWM1 time base is on
-    //setLED(1);
-}
+
 
 void vDebugQEIPorts( void )
 {
@@ -110,39 +88,72 @@ void vDebugQEIPorts( void )
     
 }
 
+void ToggleLed( void )
+{
+    TRISBbits.TRISB6 = 0;
+    LATBbits.LATB6 = ~PORTBbits.RB6;
+}
 
 void writePWM1(uint16_t value){
     P1DC1 = value;
 }
-void timerSetup(void){
-    /* TIMER1 */
-    T1CON = 0;          /* Disable Timer */
-    TMR1 = 0;           /* Clear Timer register */
-    PR1 = 3684;         /* Load the period value */
-    T1CON = 0x8000;     /* Internal instruction cycle clock */
+
+void __attribute__((__interrupt__, auto_psv)) _T1Interrupt( void )
+{
+    /* Clear interruption flags */
+    IFS0bits.T1IF = 0;
+    ToggleLed();
+    vEncoderJointPositionCalculation();
+    return;
 }
+
+
+void __attribute__((__interrupt__,auto_psv)) _QEI1Interrupt(void)
+{
+  extern volatile int16_t RevolutionCount ;
+   // if it overflowed
+     if (QEI1CONbits.UPDN ==  1){
+       RevolutionCount++;
+     } else {
+       RevolutionCount--;
+     }
+     IFS3bits.QEI1IF = 0;    // clear the interrupt flag
+}
+
+
+void vMainHardwareSetup( void )
+{
+    /* PWM Setup */
+    vPWMSetup1();
+    /* Encoder interfaces */
+    vEncoderJointSetup();
+    vEncoderPulleySetup();
+    /* Setup control loop timer */
+    vTimerTMR1Setup();
+    /* ADC setup */
+    //vADCSetup();     
+}
+
 /*
  * 
  * 
  * 
  */
 int main(int argc, char** argv) {
-    vPWM1Setup();
-    vEncoderJointSetup();
-    //vDebugQEIPorts();
-    //launch ADC
-    vADCSetup();        
-    //TRISB = ~0xA0;
+    /* Configure Hardware */
+    vMainHardwareSetup();
+
     uint16_t pwm = 0;
-    //uint16_t QEIcount = POS1CNT; 
-    
+    uint16_t EncoderPos = 0;
+
     while ( 1 )
     {
         
         
 		if ( !tickCount )	/* every 100ms */
         {
-            if( POS1CNT > 1837)
+            EncoderPos = POS1CNT;
+            if( EncoderPos > 10000)
             {
                 setLED( 1, QEI1CONbits.UPDN );
             }
@@ -151,9 +162,12 @@ int main(int argc, char** argv) {
                 setLED( 0, QEI1CONbits.UPDN );
             }
             tickCount=1000;				/* Re-Load */            
-            vEncoderJointPositionCalculation();
-            pwm = (uint16_t)(((uint32_t)(JointAngularPosition[0]*919))/32765);
-            writePWM1( POS1CNT );
+            
+            
+            //xScale = (uint32_t)(EncoderPos*PWM_MAX);
+            //Divider = (uint16_t)(xScale/10000);
+            pwm = (uint16_t)(((uint32_t)(EncoderPos*PWM_MAX))/PULSES_PER_REV);
+            writePWM1( pwm );
             //if ( pwm > 1837 ){ pwm = 0; };
         }
         tickCount --;

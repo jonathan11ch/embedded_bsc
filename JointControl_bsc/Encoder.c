@@ -2,15 +2,21 @@
 #include <string.h>
 #include "Encoder.h"
 
-#define DEG_RATIO      1
-#define TICK_RATIO     1
-uint16_t JointEncoderPOSCNT = 0; 
-uint16_t JointAngularPosition[2] = {0,0};
-
+#define DEG_RATIO      (360)
+#define TICK_RATIO     (10000)
+uint16_t JointEncoderPOSCNT = 0U; 
+int32_t JointTickCount[2] = {0L,0L};
+volatile int16_t RevolutionCount = (0);
+int16_t Deg= 0;
 
 void vEncoderJointSetup( void )
 {
     prvEncoderQEI1Setup();
+}
+
+void vEncoderOnCounterReset( void )
+{
+    
 }
 
 void vEncoderJointPositionCalculation( void )
@@ -18,7 +24,9 @@ void vEncoderJointPositionCalculation( void )
     /* Read encoder counter */
     JointEncoderPOSCNT = POS1CNT;
     //if( JointEncoderPOSCNT < 0 ){ JointEncoderPOSCNT *= -1; };
-    JointAngularPosition[0] = JointEncoderPOSCNT;
+    JointTickCount[1] = JointTickCount[0];
+    JointTickCount[0] = ( int32_t )(JointEncoderPOSCNT) + ( int32_t )(RevolutionCount*PULSES_PER_REV);
+    Deg = ( int16_t )((JointTickCount[0]*DEG_RATIO)/TICK_RATIO);
     //JointAngularPosition[0] = (uint16_t)((uint32_t)(JointEncoderPOSCNT*DEG_RATIO)/TICK_RATIO);
     //JointAngularPosition[0] *= ( 9/1000 );
 }
@@ -63,6 +71,11 @@ void prvEncoderQEI1Setup( void ){
     /* select RPINR15 to map the index channel */
     RPINR15bits.INDX1R = IDX_1; //  RP7 ( pin16 )
     QEICONbits.QEIM = 0b101; // X4 mode with position counter reset by MAX1CNT
+    
+    //ConfigIntQEI 
+    IFS3bits.QEI1IF = 0;    // clear the interrupt flag
+    IEC3bits.QEI1IE = 1;                // Enable QEI interrupt
+    IPC14bits.QEI1IP = 2;               // Interrupt priority level 2
 }
 
 void prvEncoderQEI2Setup( void ){
