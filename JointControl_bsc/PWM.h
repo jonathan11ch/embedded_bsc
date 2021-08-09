@@ -12,8 +12,8 @@
 	#include <p33Fxxxx.h>
 #endif
 
-#define PWM_MAX ( 1837UL)
-
+#define pwmMAX      ( 1837UL)
+#define pwmPTPER    (920)
 
 void vPWMSetup1( void );
 

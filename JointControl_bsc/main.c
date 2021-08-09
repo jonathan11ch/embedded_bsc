@@ -34,9 +34,9 @@ void auxClockConfig(void){
 
 void setLED(uint16_t value, uint16_t v){
     TRISBbits.TRISB4 = 0;
-    TRISBbits.TRISB5 = 0;
+    TRISBbits.TRISB3 = 0;
     LATBbits.LATB4 = value;
-    LATBbits.LATB5 = v;
+    LATBbits.LATB3 = v;
 }
 
 void PLLConfig(void){
@@ -103,22 +103,24 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt( void )
     /* Clear interruption flags */
     IFS0bits.T1IF = 0;
     ToggleLed();
+    vEncoderPulleyPositionCalculation();
+    vEncoderPulleyVelocityCalculation();
     vEncoderJointPositionCalculation();
+    vEncoderJointVelocityCalculation();
     return;
 }
 
 
 void __attribute__((__interrupt__,auto_psv)) _QEI1Interrupt(void)
 {
-  extern volatile int16_t RevolutionCount ;
-   // if it overflowed
-     if (QEI1CONbits.UPDN ==  1){
-       RevolutionCount++;
-     } else {
-       RevolutionCount--;
-     }
-     IFS3bits.QEI1IF = 0;    // clear the interrupt flag
+    vEncoderOnJointCounterReset();
 }
+
+void __attribute__((__interrupt__,auto_psv)) _QEI2Interrupt(void)
+{
+    vEncoderOnPulleyCounterReset();
+}
+
 
 
 void vMainHardwareSetup( void )
@@ -146,14 +148,12 @@ int main(int argc, char** argv) {
     uint16_t pwm = 0;
     uint16_t EncoderPos = 0;
 
-    while ( 1 )
+    for ( ;; )
     {
-        
-        
 		if ( !tickCount )	/* every 100ms */
         {
             EncoderPos = POS1CNT;
-            if( EncoderPos > 10000)
+            if(  Deg < 0)
             {
                 setLED( 1, QEI1CONbits.UPDN );
             }
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
             
             //xScale = (uint32_t)(EncoderPos*PWM_MAX);
             //Divider = (uint16_t)(xScale/10000);
-            pwm = (uint16_t)(((uint32_t)(EncoderPos*PWM_MAX))/PULSES_PER_REV);
+            pwm = (uint16_t)(((uint32_t)(EncoderPos*pwmMAX))/encoderPULSES_PER_REV);
             writePWM1( pwm );
             //if ( pwm > 1837 ){ pwm = 0; };
         }
