@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-
-
+void vControlWriteADCCmd( void );
+void vControlWriteUARTCmd( void );
 
 #ifdef	__cplusplus
 }

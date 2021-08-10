@@ -94,9 +94,6 @@ void ToggleLed( void )
     LATBbits.LATB6 = ~PORTBbits.RB6;
 }
 
-void writePWM1(uint16_t value){
-    P1DC1 = value;
-}
 
 void __attribute__((__interrupt__, auto_psv)) _T1Interrupt( void )
 {
@@ -166,8 +163,10 @@ int main(int argc, char** argv) {
             
             //xScale = (uint32_t)(EncoderPos*PWM_MAX);
             //Divider = (uint16_t)(xScale/10000);
-            pwm = (uint16_t)(((uint32_t)(EncoderPos*pwmMAX))/encoderPULSES_PER_REV);
-            writePWM1( pwm );
+            //pwm = (uint16_t)(((uint32_t)(EncoderPos*pwmDC_RANGE))/encoderPULSES_PER_REV)+pwmDC_10;
+            //pwm = 1660;
+            pwm = EncoderPos;
+            vPWMWritePWM1( pwm );
             //if ( pwm > 1837 ){ pwm = 0; };
         }
         tickCount --;
