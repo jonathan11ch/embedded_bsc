@@ -4,12 +4,14 @@
 
 uint16_t value = 0;
 
-void vPWMWritePWM1(uint16_t cmd){
+void vPWMWritePWM1(uint16_t cmd)
+{
     value = (uint16_t)(((uint32_t)(cmd*pwmDC_RANGE))/pwmINPUT_RESOLUTION) + pwmDC_10;
     P1DC1 = value;
 }
 
-void vPWMSetup1( void ){
+void vPWMSetup1( void )
+{
     /*Main Configuration*/
     
     P1TCONbits.PTOPS  = 0;        // time base postscaler
