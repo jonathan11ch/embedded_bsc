@@ -12,6 +12,7 @@
 #include "PWM.h"
 #include "Timer.h"
 #include "Control.h"
+#include "ADC.h"
 
 
 
@@ -100,10 +101,12 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt( void )
     /* Clear interruption flags */
     IFS0bits.T1IF = 0;
     ToggleLed();
+    vADCReadInputVoltageCh0();
     vEncoderPulleyPositionCalculation();
     vEncoderPulleyVelocityCalculation();
     vEncoderJointPositionCalculation();
     vEncoderJointVelocityCalculation();
+    
     return;
 }
 
@@ -127,10 +130,11 @@ void vMainHardwareSetup( void )
     /* Encoder interfaces */
     vEncoderJointSetup();
     vEncoderPulleySetup();
+    /* ADC setup */
+    vADCControlInputSetup();
     /* Setup control loop timer */
     vTimerTMR1Setup();
-    /* ADC setup */
-    //vADCSetup();     
+         
 }
 
 /*
@@ -142,7 +146,7 @@ int main(int argc, char** argv) {
     /* Configure Hardware */
     vMainHardwareSetup();
 
-    uint16_t pwm = 0;
+    //uint16_t pwm = 0;
     uint16_t EncoderPos = 0;
 
     for ( ;; )
@@ -161,12 +165,7 @@ int main(int argc, char** argv) {
             tickCount=1000;				/* Re-Load */            
             
             
-            //xScale = (uint32_t)(EncoderPos*PWM_MAX);
-            //Divider = (uint16_t)(xScale/10000);
-            //pwm = (uint16_t)(((uint32_t)(EncoderPos*pwmDC_RANGE))/encoderPULSES_PER_REV)+pwmDC_10;
-            //pwm = 1660;
-            pwm = EncoderPos;
-            vPWMWritePWM1( pwm );
+            vPWMWritePWM1( EncoderPos );
             //if ( pwm > 1837 ){ pwm = 0; };
         }
         tickCount --;
