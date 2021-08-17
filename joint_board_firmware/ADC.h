@@ -14,6 +14,9 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+    
+#define adcRESOLUTION_10BITS        (1023UL)
+#define adcRESOLUTION_12BITS        (4095UL)
 
 extern uint16_t Ch0InputVoltage;
 

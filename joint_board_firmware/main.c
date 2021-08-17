@@ -13,6 +13,7 @@
 #include "Timer.h"
 #include "Control.h"
 #include "ADC.h"
+#include "UART.h"
 
 
 
@@ -50,33 +51,6 @@ void PLLConfig(void){
 
 
 
-void vADCSetup(void){
-    /* ADC */
-    AD1CON1bits.FORM = 0;   /* Data Output Form: Unsigned Int */
-    AD1CON1bits.SSRC = 7;   /* auto-convert */
-    AD1CON1bits.ASAM = 0;   /* sampling begins when SAMP bit is set */
-    AD1CON1bits.AD12B = 0;  /* 10-bit operation */
-    AD1CON2bits.SMPI = 0;   /* every sample/conversion operation */
-    AD1CON2bits.CHPS = 0;   /* Converts CH0 */
-    AD1CON3bits.ADRC = 0;   /* ADC Clock is derived from System */
-    AD1CON3bits.SAMC = 31;  /* Auto Sample Time 31*Tad */
-    AD1CON3bits.ADCS = 0;   /* Tad = Tcy*(ADCS+1) */
-    AD1CHS0bits.CH0SA = 0;  /* AN0 for CH0 */
-    AD1CHS0bits.CH0NA = 0;  /* Vref- for CH0 */
-    AD1PCFGLbits.PCFG0 = 0; /* AN0 as Analog Input */
-    AD1CON1bits.ADON = 1;   /* Turn on ADC */
-}
-
-void vUARTSetup(void){
-    /* Configure according to pins */
-	//RPINR = ?;
-    //RPOR9 = ?;
-    /* UART (8-N-1) */
-    U1MODE = 0;
-    U1BRG = 11;         /* 19200 @7370000 Hz */
-    U1MODE = 0x8000;    /* Low-Speed */
-    U1STA = 0x0400;
-}
 
 
 
@@ -106,6 +80,8 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt( void )
     vEncoderPulleyVelocityCalculation();
     vEncoderJointPositionCalculation();
     vEncoderJointVelocityCalculation();
+    vUARTWriteIntraData();
+    vUARTReadIntraData();
     
     return;
 }
@@ -134,7 +110,7 @@ void vMainHardwareSetup( void )
     vADCControlInputSetup();
     /* Setup control loop timer */
     vTimerTMR1Setup();
-         
+    vUARTIntraCommunicationSetup();     
 }
 
 /*
