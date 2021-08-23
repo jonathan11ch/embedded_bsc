@@ -110,7 +110,9 @@ void vMainHardwareSetup( void )
     vADCControlInputSetup();
     /* Setup control loop timer */
     vTimerTMR1Setup();
-    vUARTIntraCommunicationSetup();     
+    vUARTIntraCommunicationSetup();
+    //EncoderPos = POS1CNT;
+    vPWMWritePWM1( POS1CNT );
 }
 
 /*
@@ -123,13 +125,13 @@ int main(int argc, char** argv) {
     vMainHardwareSetup();
 
     //uint16_t pwm = 0;
-    uint16_t EncoderPos = 0;
+    
 
     for ( ;; )
     {
 		if ( !tickCount )	/* every 100ms */
         {
-            EncoderPos = POS1CNT;
+            
             if(  Deg < 0)
             {
                 setLED( 1, QEI1CONbits.UPDN );
@@ -141,7 +143,7 @@ int main(int argc, char** argv) {
             tickCount=1000;				/* Re-Load */            
             
             
-            vPWMWritePWM1( EncoderPos );
+            
             //if ( pwm > 1837 ){ pwm = 0; };
         }
         tickCount --;

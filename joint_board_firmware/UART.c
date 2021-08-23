@@ -23,7 +23,7 @@ void vUARTReadIntraData( void )
 
 void vUARTWriteIntraData( )
 {
-    U1TXREG = 'H';
+    U1TXREG = 'B';
 }
 
 
@@ -31,10 +31,11 @@ void vUARTWriteIntraData( )
 void prvUARTSetup1( void )
 {
     /* Configure according to pins */
-    TRISBbits.TRISB2 = 1;
-    TRISBbits.TRISB3 = 0;
+    TRISBbits.TRISB2 = 0;
+    TRISBbits.TRISB3 = 1;
 	RPINR18bits.U1RXR = uartRX_PORT;
     RPOR1bits.RP3R = 0b00011; //TX peripheral function assigned to RP3
+    //RPOR6bits.RP12R = 0b00011; //TX peripheral function assigned to RP3
 
     /* U1MODE register config */
     U1MODEbits.UARTEN = 0;  // UART disabled
@@ -43,10 +44,10 @@ void prvUARTSetup1( void )
     U1MODEbits.RTSMD = 0;   // UxRTS is in flow control mode
     U1MODEbits.UEN = 0b00;  // UxTX UxRX pins are enabled and used ...
     U1MODEbits.WAKE = 0;    // Wake-up is disabled
-    U1MODEbits.LPBACK = 0;  // LoopBack is disabled
+    U1MODEbits.LPBACK = 1;  // LoopBack is disabled
     U1MODEbits.ABAUD = 0;   // Baud rate measurements is disabled or complete
     U1MODEbits.URXINV = 0;  // UART receive polarity inversion state is '1'
-    U1MODEbits.BRGH = 1;    // High speed mode (4 x baud clock per bit period)
+    U1MODEbits.BRGH = 0;    // Standard speed mode (16 x baud clock per bit period)
     U1MODEbits.PDSEL = 0b00;// 8-bit data, no parity
     U1MODEbits.STSEL = 0;   // 1 Stop bit
     U1MODEbits.UARTEN = 1;  // UART enabled
@@ -59,7 +60,7 @@ void prvUARTSetup1( void )
     U1STAbits.URXISEL = 0b00;  // Interupt flag bit is set when a character received
     U1STAbits.ADDEN = 0;       // Address Detect mode is disabled
     /* baud rate config */
-    U1BRG = 8;                // 115200 @7370000 with high speed (x4)
+    U1BRG = 1;                // 115200 @7370000 with standard speed (x16)
 }
 
 
