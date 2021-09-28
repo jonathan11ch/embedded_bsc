@@ -3,38 +3,86 @@
 #include <p33FJ128MC802.h>
 #include "UART.h"
 
-
 uint16_t IntraDataRX = 0;
+uint8_t IsDataRecevied = 0; 
+
+
+void vUARTRequestIntraData( void )
+{
+    /* flush the input buffer */
+    vUARTFlushBufferRX();
+    /* send request word */
+    vUARTWriteIntraData(uartREQUEST_DATA);
+}
+
+
+void vUARTReadIntraData( void )
+{
+    IsDataRecevied = 0;
+    if(U1STAbits.URXDA == 1)
+    {
+        /* Read data */
+        IntraDataRX = U1RXREG;
+        IsDataRecevied = 1;
+    }    
+}
+
+
+void vUARTCheckDataRequest( uint16_t dataToSend )
+{
+    vUARTReadIntraData();
+    if ( IsDataRecevied )
+    {
+        if(IntraDataRX == uartREQUEST_DATA)
+        {
+            /* send data */
+            vUARTWriteIntraData(dataToSend);
+            vUARTWriteIntraData(dataToSend>>8);
+        }
+        
+    }
+   
+    
+}
+
+void vUARTFlushBufferRX( void )
+{
+    uint16_t dataToFlush;
+    while( U1STAbits.URXDA == 1 )
+    {
+        dataToFlush = U1RXREG;
+    }
+}
 
 void vUARTIntraCommunicationSetup( void )
 {
     prvUARTSetup1();
 }
 
-void vUARTReadIntraData( void )
-{
-    if(U1STAbits.URXDA == 1)
-    {
-        /* Read data */
-        IntraDataRX = U1RXREG;
-    }
-    
-}
 
-void vUARTWriteIntraData( )
+
+
+void vUARTWriteIntraData(uint16_t data )
 {
-    U1TXREG = 'B';
+    /* check output buffer availability */
+    while(U1STAbits.UTXBF == 1);
+    U1TXREG = data;
+    
+    
 }
 
 
 
 void prvUARTSetup1( void )
 {
+    /* Analog ports disabled */
+    adcPCFG4 = 1;  //digital mode
+    adcPCFG5 = 1;  //digital mode
     /* Configure according to pins */
-    TRISBbits.TRISB2 = 0;
-    TRISBbits.TRISB3 = 1;
+    uartRX_TRIS = 1;
+    uartTX_TRIS = 1;
 	RPINR18bits.U1RXR = uartRX_PORT;
-    RPOR1bits.RP3R = 0b00011; //TX peripheral function assigned to RP3
+    uartTX_PORT = 0b00011; //TX peripheral function assigned to RP3
     //RPOR6bits.RP12R = 0b00011; //TX peripheral function assigned to RP3
 
     /* U1MODE register config */
@@ -44,7 +92,7 @@ void prvUARTSetup1( void )
     U1MODEbits.RTSMD = 0;   // UxRTS is in flow control mode
     U1MODEbits.UEN = 0b00;  // UxTX UxRX pins are enabled and used ...
     U1MODEbits.WAKE = 0;    // Wake-up is disabled
-    U1MODEbits.LPBACK = 1;  // LoopBack is disabled
+    U1MODEbits.LPBACK = 0;  // LoopBack is disabled
     U1MODEbits.ABAUD = 0;   // Baud rate measurements is disabled or complete
     U1MODEbits.URXINV = 0;  // UART receive polarity inversion state is '1'
     U1MODEbits.BRGH = 0;    // Standard speed mode (16 x baud clock per bit period)
@@ -59,8 +107,12 @@ void prvUARTSetup1( void )
     U1STAbits.UTXEN = 1;       // UART transmitter is enabled 
     U1STAbits.URXISEL = 0b00;  // Interupt flag bit is set when a character received
     U1STAbits.ADDEN = 0;       // Address Detect mode is disabled
+    
+    //IFS0bits.U1RXIF=0; /* clear UART1 receiver interrupt flag */
+    //IFS0bits.U1TXIF=0; /* clear UART1 transmitter interrupt flag */
+    //IEC0bits.U1RXIE=1; /* enable UART1 receiver ISR */
     /* baud rate config */
-    U1BRG = 1;                // 115200 @7370000 with standard speed (x16)
+    U1BRG = uartBRG_1;                // 115200 @7370000 with standard speed (x16)
 }
 
 

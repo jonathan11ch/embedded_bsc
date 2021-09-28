@@ -8,60 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "main.h"
+#include "Firmware.h"
 #include "Encoder.h"
-#include "PWM.h"
-#include "Timer.h"
-#include "Control.h"
-#include "ADC.h"
-#include "UART.h"
-
 
 
 
 /*
  * 
  */
-volatile unsigned int tickCount = 0;
-unsigned int receivedChar, ADCValue;
-
-void toggleOutput(void){
-    PORTBbits.RB4 = ~PORTBbits.RB4;
-}
-
-void auxClockConfig(void){
-    ACLKCONbits.SELACLK = 0; // Primary PLL (Fvco) provides source clock
-    
-}
-
-
-void setLED(uint16_t value, uint16_t v){
-    TRISBbits.TRISB4 = 0;
-    TRISBbits.TRISB3 = 0;
-    LATBbits.LATB4 = value;
-    LATBbits.LATB3 = v;
-}
-
-void PLLConfig(void){
-    PLLFBD  = 28;                // M  = 30
-    CLKDIVbits.PLLPRE  =   0;    // N1 = 2
-    CLKDIVbits.PLLPOST =   0;    // N2 = 2
-    ACLKCONbits.APSTSCLR = 7;    //divide auxiliary clock by 1
-    while(OSCCONbits.LOCK !=1);  //wait for PLL to lock
-}
-
-
-
-
-
-
-void vDebugQEIPorts( void )
-{
-    TRISBbits.TRISB7 = 0;
-    TRISBbits.TRISB8 = 0;
-    TRISBbits.TRISB6 = 0;
-    TRISBbits.TRISB9 = 0;
-    
-}
 
 void ToggleLed( void )
 {
@@ -72,17 +26,7 @@ void ToggleLed( void )
 
 void __attribute__((__interrupt__, auto_psv)) _T1Interrupt( void )
 {
-    /* Clear interruption flags */
-    IFS0bits.T1IF = 0;
-    ToggleLed();
-    vADCReadInputVoltageCh0();
-    vEncoderPulleyPositionCalculation();
-    vEncoderPulleyVelocityCalculation();
-    vEncoderJointPositionCalculation();
-    vEncoderJointVelocityCalculation();
-    vUARTWriteIntraData();
-    vUARTReadIntraData();
-    
+    vFirmwareMainRoutine();
     return;
 }
 
@@ -97,23 +41,17 @@ void __attribute__((__interrupt__,auto_psv)) _QEI2Interrupt(void)
     vEncoderOnPulleyCounterReset();
 }
 
+//void __attribute__((__interrupt__,auto_psv)) _U1RXInterrupt(void)
+//{
+//    extern volatile uint8_t IsDataRecevied; 
+//    extern volatile uint16_t IntraDataRX;
+//    ToggleLed();
+//    IsDataRecevied = 1;
+//    IntraDataRX = U1RXREG;
+//    IFS0bits.U1RXIF = 0;    //clear UART1 RX interrupt flag   
+//}
 
 
-void vMainHardwareSetup( void )
-{
-    /* PWM Setup */
-    vPWMSetup1();
-    /* Encoder interfaces */
-    vEncoderJointSetup();
-    vEncoderPulleySetup();
-    /* ADC setup */
-    vADCControlInputSetup();
-    /* Setup control loop timer */
-    vTimerTMR1Setup();
-    vUARTIntraCommunicationSetup();
-    //EncoderPos = POS1CNT;
-    vPWMWritePWM1( POS1CNT );
-}
 
 /*
  * 
@@ -122,31 +60,12 @@ void vMainHardwareSetup( void )
  */
 int main(int argc, char** argv) {
     /* Configure Hardware */
-    vMainHardwareSetup();
+    vFirmwareHardwareSetup();
 
-    //uint16_t pwm = 0;
-    
-
+    vFirmwareInitialRoutine();
     for ( ;; )
     {
-		if ( !tickCount )	/* every 100ms */
-        {
-            
-            if(  Deg < 0)
-            {
-                setLED( 1, QEI1CONbits.UPDN );
-            }
-            else
-            {
-                setLED( 0, QEI1CONbits.UPDN );
-            }
-            tickCount=1000;				/* Re-Load */            
-            
-            
-            
-            //if ( pwm > 1837 ){ pwm = 0; };
-        }
-        tickCount --;
+		vFirmwareIdleRoutine();
     }
     return (EXIT_SUCCESS);
 }

@@ -29,7 +29,7 @@ void vADCTensionInputSetup( void )
 /******************************************************************************/
 void prvADCSetupChannel1( void )
 {
-    TRISAbits.TRISA0 = 1;       // set input port
+    adcTRIS0 = 1;       // set input port
     /* AD1CON1 bit config */
     AD1CON1bits.ADON = 0;       //set ADC1 OFF
     AD1CON1bits.ADSIDL = 1;     //stop in idle mode
@@ -51,7 +51,7 @@ void prvADCSetupChannel1( void )
     AD1CHS0bits.CH0NA = 0;      //Channel 0 negative input is Vrefl
     AD1CHS0bits.CH0SA = 0;      //Channel 0 positive input is AN0;
     
-    AD1PCFGLbits.PCFG0 = 0;     // port AN0 (pin 2) in Analog mode
+    adcPCFG0 = 0;     // port AN0 (pin 2) in Analog mode
     
     /* Turn on ADC */
     AD1CON1bits.ADON =1;

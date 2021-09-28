@@ -2,7 +2,7 @@ import serial
 import time
 
 Serial = serial.Serial( port = '/dev/ttyUSB0',
-                        baudrate = 9600,
+                        baudrate = 115155,
                         parity = serial.PARITY_NONE,
                         stopbits = serial.STOPBITS_ONE,
                         bytesize = serial.EIGHTBITS,
@@ -11,13 +11,11 @@ Serial = serial.Serial( port = '/dev/ttyUSB0',
 print("Connected to serial port: " + Serial.portstr)
 print(Serial.get_settings())
 
+while True:
 
-with Serial as s:
-    s.write(b'hello')
-    time.sleep(1)
-    d = s.readline()
-
-
-time.sleep(5)
-print(d)
+    Serial.write(b'R')
+    time.sleep(0.001)
+    d = Serial.read(2)
+    print(d)
+    #time.sleep(0.001)
 Serial.close()

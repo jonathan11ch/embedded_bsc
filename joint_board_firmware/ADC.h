@@ -18,6 +18,11 @@ extern "C" {
 #define adcRESOLUTION_10BITS        (1023UL)
 #define adcRESOLUTION_12BITS        (4095UL)
 
+/*tO MIGRATE TO harwdare.h*/
+#define adcPCFG0     AD1PCFGLbits.PCFG0    
+#define adcTRIS0     TRISAbits.TRISA0 
+    
+    
 extern uint16_t Ch0InputVoltage;
 
 void vADCReadInputVoltageCh0( void );
